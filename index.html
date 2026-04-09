@@ -35,13 +35,17 @@
   .hidden { display:none !important; }
   .del-btn { color:#cbd5e1; font-size:12px; background:none; border:none; cursor:pointer; margin-left:8px; flex-shrink:0; }
   .del-btn:hover { color:#f87171; }
+  #syncBar { position:fixed; top:0; left:0; width:100%; background:#22c55e; color:#fff; font-size:12px; text-align:center; padding:6px; z-index:1000; display:none; }
+  #syncBar.show { display:block; }
+  #loadingScreen { position:absolute; top:0; left:0; width:100%; height:100%; background:#0f172a; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:500; border-radius:38px; }
 </style>
 </head>
 <body class="bg-slate-300 flex justify-center items-center min-h-screen p-4">
 
 <div id="toast"></div>
+<div id="syncBar">🔄 Sincronizando datos...</div>
 
-<div class="w-full max-w-sm bg-white rounded-[38px] shadow-2xl overflow-hidden" style="height:870px">
+<div class="w-full max-w-sm bg-white rounded-[38px] shadow-2xl overflow-hidden" style="height:870px;position:relative">
 
 <!-- ===================== LOGIN ===================== -->
 <div id="login" class="h-full flex flex-col justify-center items-center p-8" style="background:#0f172a">
@@ -73,6 +77,22 @@
   <div class="mt-10 text-slate-600 text-xs text-center">© 2025 Villegas System · Todos los derechos reservados</div>
 </div>
 
+<!-- ===================== LOADING ===================== -->
+<div id="loadingScreen" class="hidden">
+  <div style="width:52px;height:52px;background:#1e293b;border-radius:16px;border:1.5px solid #334155;display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+    <svg width="28" height="28" viewBox="0 0 44 44" fill="none">
+      <rect x="5" y="21" width="34" height="18" rx="4" fill="#22c55e"/>
+      <path d="M13 21V16C13 12.13 17.03 9 22 9C26.97 9 31 12.13 31 16V21" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="22" cy="30" r="3.5" fill="white"/>
+    </svg>
+  </div>
+  <div class="text-white font-bold text-base mb-2">Villegas <span style="color:#22c55e">System</span></div>
+  <div style="display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px">
+    <span class="spinner" style="border-top-color:#22c55e;border-color:rgba(34,197,94,0.3)"></span>
+    Sincronizando datos...
+  </div>
+</div>
+
 <!-- ===================== APP ===================== -->
 <div id="app" class="hidden h-full flex flex-col">
 
@@ -92,7 +112,10 @@
           <div class="text-slate-400 text-xs">Guardia Virtual PRO</div>
         </div>
       </div>
-      <button onclick="cerrarSesion()" class="text-slate-400 text-xs px-3 py-1 rounded-lg" style="border:1px solid #334155">↩ Salir</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="sincronizarTodo()" style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:4px 8px;color:#22c55e;font-size:11px;cursor:pointer" title="Sincronizar">🔄</button>
+        <button onclick="cerrarSesion()" class="text-slate-400 text-xs px-3 py-1 rounded-lg" style="border:1px solid #334155">↩ Salir</button>
+      </div>
     </div>
     <div class="text-slate-400 text-xs pt-2" style="border-top:1px solid #1e293b" id="infoTurno"></div>
   </div>
@@ -127,12 +150,10 @@
         <option>Inspección (Corredor)</option>
       </select>
 
-      <!-- NOMBRE: select referencial o input libre según tipo -->
       <label class="lbl" id="lbl_nombre">Nombre</label>
       <select id="listaPersonas" class="inp hidden" onchange="autoCompletarCasa()"></select>
       <input id="nombre" placeholder="Nombre completo" class="inp">
 
-      <!-- CASA: select referencial o libre según tipo -->
       <label class="lbl" id="lbl_casa">Lagos / Casa</label>
       <select id="casa" class="inp"></select>
       <input id="casaLibre" placeholder="Lagos / Casa" class="inp hidden">
@@ -240,7 +261,7 @@
       <label class="lbl">Teléfono de contacto</label>
       <input id="r_telefono" placeholder="Ej: +58 412 000 0000" class="inp" type="tel">
 
-      <button onclick="guardarResidente()" class="btn-g">Guardar Lagos</button>
+      <button id="btnGuardarResidente" onclick="guardarResidente()" class="btn-g">Guardar Lagos</button>
 
       <div class="sec-title">Lagos registrados</div>
       <div id="listaR"></div>
@@ -271,7 +292,7 @@
         <option>Otro familiar</option>
       </select>
 
-      <button onclick="guardarFamiliar()" class="btn-g">Guardar familiar</button>
+      <button id="btnGuardarFamiliar" onclick="guardarFamiliar()" class="btn-g">Guardar familiar</button>
 
       <div class="sec-title">Familiares registrados</div>
       <div id="listaF"></div>
@@ -287,7 +308,6 @@
         <div class="radio-opt" id="ptipo_complejo" onclick="selPersonalTipo('complejo')">🏢 Del complejo</div>
       </div>
 
-      <!-- PERSONAL DE LA CASA -->
       <div id="p_secCasa" class="hidden">
         <label class="lbl">Lagos / Casa</label>
         <select id="p_casa" class="inp"></select>
@@ -295,10 +315,9 @@
         <input id="p_nombre_casa" placeholder="Nombre completo" class="inp">
         <label class="lbl">Cargo</label>
         <input id="p_cargo_casa" placeholder="Ej: Doméstica, Plomero, Electricista..." class="inp">
-        <button onclick="guardarPersonalCasa()" class="btn-g">Guardar personal de casa</button>
+        <button id="btnGuardarPCasa" onclick="guardarPersonalCasa()" class="btn-g">Guardar personal de casa</button>
       </div>
 
-      <!-- PERSONAL DEL COMPLEJO -->
       <div id="p_secComplejo" class="hidden">
         <label class="lbl">Nombre</label>
         <input id="p_nombre_complejo" placeholder="Nombre completo" class="inp">
@@ -306,7 +325,7 @@
         <input id="p_cargo_complejo" placeholder="Ej: Técnico, Supervisor, Vigilante..." class="inp">
         <label class="lbl">Compañía / Empresa</label>
         <input id="p_compania" placeholder="Ej: Servicios ABC, C.A." class="inp">
-        <button onclick="guardarPersonalComplejo()" class="btn-g">Guardar personal del complejo</button>
+        <button id="btnGuardarPComplejo" onclick="guardarPersonalComplejo()" class="btn-g">Guardar personal del complejo</button>
       </div>
 
       <div class="sec-title">Personal registrado</div>
@@ -318,8 +337,11 @@
 </div><!-- /phone -->
 
 <script>
-// ── CONFIGURACIÓN GOOGLE SHEETS ──
-const SHEET_URL = "TU_URL_AQUI";
+// ══════════════════════════════════════════════════════
+// CONFIGURACIÓN — PON AQUÍ LA URL DE TU APPS SCRIPT
+// ══════════════════════════════════════════════════════
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbw693Gb3jN4R2oe8vrh2qkMGuvepT97ihN6mSSU0G3tEZVJUnPxSLUEEZFry1NHGbbGJg/exec";
+// ══════════════════════════════════════════════════════
 
 let residentes = [], familiares = [], personal = [], visitas = [], reportes = [];
 let guardia = "", turno = "";
@@ -334,10 +356,18 @@ function toast(msg, ms=2800) {
   setTimeout(() => t.classList.remove('show'), ms);
 }
 
+// ── SYNC BAR ──
+function showSync(v) {
+  document.getElementById('syncBar').classList.toggle('show', v);
+}
+
 // ── LOGIN ──
-function iniciar(g, t) {
+async function iniciar(g, t) {
   guardia = g; turno = t;
   document.getElementById('login').classList.add('hidden');
+  document.getElementById('loadingScreen').classList.remove('hidden');
+  await sincronizarTodo(true);
+  document.getElementById('loadingScreen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   const ahora = new Date();
   document.getElementById('infoTurno').innerText =
@@ -349,6 +379,61 @@ function iniciar(g, t) {
 function cerrarSesion() {
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login').classList.remove('hidden');
+}
+
+// ══════════════════════════════════════════════════════
+// SINCRONIZACIÓN CON GOOGLE SHEETS
+// ══════════════════════════════════════════════════════
+
+// Descarga todos los datos del Sheets y actualiza la app
+async function sincronizarTodo(silencioso = false) {
+  if (!SHEET_URL || SHEET_URL === 'https://script.google.com/macros/s/AKfycbw693Gb3jN4R2oe8vrh2qkMGuvepT97ihN6mSSU0G3tEZVJUnPxSLUEEZFry1NHGbbGJg/exec') {
+    // Sin Sheets configurado: usa localStorage como antes
+    _cargarLocal();
+    return;
+  }
+  if (!silencioso) showSync(true);
+  try {
+    const res = await fetch(SHEET_URL + '?action=leerTodo', { method:'GET' });
+    const data = await res.json();
+    if (data.residentes)  { residentes = data.residentes;  localStorage.setItem('residentes', JSON.stringify(residentes)); }
+    if (data.familiares)  { familiares = data.familiares;  localStorage.setItem('familiares', JSON.stringify(familiares)); }
+    if (data.personal)    { personal   = data.personal;    localStorage.setItem('personal',   JSON.stringify(personal)); }
+    if (data.visitas)     { visitas    = data.visitas;     localStorage.setItem('visitas',    JSON.stringify(visitas)); }
+    actualizarCasas();
+    render();
+    renderResidentes(); renderFamiliares(); renderPersonal();
+    if (!silencioso) toast('✅ Datos actualizados desde Sheets');
+  } catch(e) {
+    // Si falla la red, usa lo que hay en local
+    _cargarLocal();
+    if (!silencioso) toast('⚠️ Sin conexión — usando datos locales');
+  } finally {
+    if (!silencioso) showSync(false);
+  }
+}
+
+function _cargarLocal() {
+  const v  = localStorage.getItem('visitas');    if(v)  { visitas    = JSON.parse(v); render(); }
+  const r  = localStorage.getItem('residentes'); if(r)  { residentes = JSON.parse(r); }
+  const f  = localStorage.getItem('familiares'); if(f)  { familiares = JSON.parse(f); }
+  const p  = localStorage.getItem('personal');   if(p)  { personal   = JSON.parse(p); }
+  const rp = localStorage.getItem('reportes');   if(rp) { reportes   = JSON.parse(rp); }
+}
+
+// Envía cualquier acción al Sheets
+async function enviarASheet(payload) {
+  if (!SHEET_URL || SHEET_URL === 'https://script.google.com/macros/s/AKfycbw693Gb3jN4R2oe8vrh2qkMGuvepT97ihN6mSSU0G3tEZVJUnPxSLUEEZFry1NHGbbGJg/exec') return false;
+  try {
+    await fetch(SHEET_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    return true;
+  } catch(e) {
+    return false;
+  }
 }
 
 // ── MENÚ ──
@@ -373,7 +458,6 @@ function actualizarCasas() {
   const opciones = residentes.length
     ? [...new Set(residentes.map(r => r.lago))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
     : [];
-  // Para visitas: si no hay residentes registrados, mostrar Lagos 1..30
   const opVisitas = opciones.length ? opciones : [...Array(30)].map((_,i)=>`Lagos ${i+1}`);
   const sel = document.getElementById('casa');
   if (sel) { const p=sel.value; sel.innerHTML=opVisitas.map(c=>`<option>${c}</option>`).join(''); if(p) sel.value=p; }
@@ -397,8 +481,7 @@ function actualizarCasasPersonal() {
   if (sel) { const p=sel.value; sel.innerHTML=opciones.map(c=>`<option>${c}</option>`).join(''); if(p) sel.value=p; }
 }
 
-// ── CAMPOS DINÁMICOS VISITAS (INTELIGENTES) ──
-// Mapa interno: valor del select de personas → lago/casa correspondiente
+// ── CAMPOS DINÁMICOS VISITAS ──
 let _mapaPersonaCasa = {};
 
 function actualizarCampos() {
@@ -409,7 +492,6 @@ function actualizarCampos() {
   const casaLibre = document.getElementById('casaLibre');
   const lblCasa   = document.getElementById('lbl_casa');
 
-  // Reset
   lista.innerHTML = '';
   lista.classList.add('hidden');
   nomInput.classList.remove('hidden');
@@ -419,7 +501,6 @@ function actualizarCampos() {
   casaLibre.value = '';
   _mapaPersonaCasa = {};
 
-  // ── RESIDENTE ──
   if (tipo === 'Residente') {
     if (residentes.length) {
       residentes.forEach(r => {
@@ -431,7 +512,6 @@ function actualizarCampos() {
       });
       lista.classList.remove('hidden');
       nomInput.classList.add('hidden');
-      // Casa se autocompleta al seleccionar
       casaSel.classList.add('hidden');
       casaLibre.classList.remove('hidden');
       lblCasa.textContent = 'Lagos (autocompletado)';
@@ -441,8 +521,6 @@ function actualizarCampos() {
       lblCasa.textContent = 'Lagos / Casa';
       _rellenarCasasRegistradas(casaSel);
     }
-
-  // ── FAMILIAR ──
   } else if (tipo === 'Familiar') {
     if (familiares.length) {
       familiares.forEach(f => {
@@ -461,8 +539,6 @@ function actualizarCampos() {
       lblCasa.textContent = 'Lagos / Casa';
       _rellenarCasasRegistradas(casaSel);
     }
-
-  // ── PERSONAL AUTORIZADO (de la casa) ──
   } else if (tipo === 'Personal autorizado') {
     const pool = personal.filter(p => p.tipo === 'casa');
     if (pool.length) {
@@ -482,8 +558,6 @@ function actualizarCampos() {
       lblCasa.textContent = 'Lagos / Casa';
       _rellenarCasasRegistradas(casaSel);
     }
-
-  // ── PERSONAL DEL COMPLEJO ──
   } else if (tipo === 'Personal del complejo') {
     const pool = personal.filter(p => p.tipo === 'complejo');
     if (pool.length) {
@@ -494,7 +568,6 @@ function actualizarCampos() {
       });
       lista.classList.remove('hidden');
       nomInput.classList.add('hidden');
-      // Para personal del complejo la casa es área común, mostrar select con áreas
       casaSel.innerHTML = '<option>Área común</option><option>Corredor</option><option>Estacionamiento</option><option>Portería</option><option>Piscina</option><option>Salón</option>';
       casaSel.classList.remove('hidden');
       casaLibre.classList.add('hidden');
@@ -504,8 +577,6 @@ function actualizarCampos() {
       lblCasa.textContent = 'Área del complejo';
       casaSel.innerHTML = '<option>Área común</option><option>Corredor</option><option>Estacionamiento</option><option>Portería</option><option>Piscina</option><option>Salón</option>';
     }
-
-  // ── TIPOS LIBRES (Visitante, Delivery, Taxi, etc.) ──
   } else {
     nomInput.placeholder = tipo === 'Delivery' ? 'Empresa o nombre del repartidor'
       : tipo === 'Taxi / Uber' ? 'Nombre del conductor / empresa'
@@ -520,7 +591,6 @@ function actualizarCampos() {
   }
 }
 
-// Llena el select de casa con los lagos registrados (o Lagos 1-30 si no hay)
 function _rellenarCasasRegistradas(sel) {
   const opciones = residentes.length
     ? [...new Set(residentes.map(r => r.lago))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
@@ -528,13 +598,10 @@ function _rellenarCasasRegistradas(sel) {
   sel.innerHTML = opciones.map(c=>`<option>${c}</option>`).join('');
 }
 
-// Autocompleta la casa cuando se elige una persona del select referencial
 function autoCompletarCasa() {
   const val = document.getElementById('listaPersonas').value;
   const casaLibre = document.getElementById('casaLibre');
-  if (_mapaPersonaCasa[val]) {
-    casaLibre.value = _mapaPersonaCasa[val];
-  }
+  if (_mapaPersonaCasa[val]) casaLibre.value = _mapaPersonaCasa[val];
 }
 
 // ── REGISTRAR VISITA ──
@@ -569,33 +636,21 @@ async function registrar() {
   document.getElementById('motivo').value = '';
   render();
   toast('✅ Entrada registrada');
-  enviarASheet(data);
-}
 
-// ── GOOGLE SHEETS ──
-async function enviarASheet(data) {
-  if (!SHEET_URL || SHEET_URL==='TU_URL_AQUI') return;
   const btn = document.getElementById('btnRegistrar');
   btn.innerHTML = '<span class="spinner"></span>Enviando...';
   btn.disabled = true;
-  try {
-    await fetch(SHEET_URL, {
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({action:'registrarVisita',...data})
-    });
-    toast('📊 Guardado en Google Sheets');
-  } catch(e) {
-    toast('⚠️ Sin conexión a Sheets (guardado local)');
-  } finally {
-    btn.innerHTML = 'Registrar entrada';
-    btn.disabled = false;
-  }
+  const ok = await enviarASheet({action:'registrarVisita', ...data});
+  btn.innerHTML = 'Registrar entrada';
+  btn.disabled = false;
+  if (ok) toast('📊 Guardado en Google Sheets');
+  else    toast('⚠️ Sin conexión a Sheets (guardado local)');
 }
 
 // ── RENDER VISITAS ──
 function render() {
   const lista = document.getElementById('lista');
+  if (!lista) return;
   lista.innerHTML='';
   let total=0,dia=0,noche=0,seg=0,aseo=0,delivery=0,res=0,horas={};
   const colores = {
@@ -626,14 +681,15 @@ function render() {
   });
   let maxHora=null,max=0;
   for(let h in horas){if(horas[h]>max){max=horas[h];maxHora=h;}}
-  document.getElementById('st_total').innerText=total;
-  document.getElementById('st_dia').innerText=dia;
-  document.getElementById('st_noche').innerText=noche;
-  document.getElementById('st_seguridad').innerText=seg;
-  document.getElementById('st_aseo').innerText=aseo;
-  document.getElementById('st_delivery').innerText=delivery;
-  document.getElementById('st_residentes').innerText=res;
-  document.getElementById('st_hora').innerText=maxHora!==null?maxHora+':00':'-';
+  const el = id => document.getElementById(id);
+  if(el('st_total'))     el('st_total').innerText=total;
+  if(el('st_dia'))       el('st_dia').innerText=dia;
+  if(el('st_noche'))     el('st_noche').innerText=noche;
+  if(el('st_seguridad')) el('st_seguridad').innerText=seg;
+  if(el('st_aseo'))      el('st_aseo').innerText=aseo;
+  if(el('st_delivery'))  el('st_delivery').innerText=delivery;
+  if(el('st_residentes'))el('st_residentes').innerText=res;
+  if(el('st_hora'))      el('st_hora').innerText=maxHora!==null?maxHora+':00':'-';
 }
 
 // ── RADIO BUTTONS ──
@@ -707,26 +763,34 @@ function renderReportes() {
 }
 
 // ── RESIDENTES / LAGOS ──
-function guardarResidente() {
+async function guardarResidente() {
   const lago     = document.getElementById('r_lago').value.trim();
   const nombre1  = document.getElementById('r_nombre1').value.trim();
   const nombre2  = document.getElementById('r_nombre2').value.trim();
   const telefono = document.getElementById('r_telefono').value.trim();
   if (!lago||!nombre1) { toast('⚠️ Ingresa el número de Lagos y el Residente 1'); return; }
-  residentes.push({lago, nombre1, nombre2, telefono});
+
+  const btn = document.getElementById('btnGuardarResidente');
+  btn.innerHTML = '<span class="spinner"></span>Guardando...'; btn.disabled = true;
+
+  const nuevo = {lago, nombre1, nombre2, telefono};
+  residentes.push(nuevo);
   residentes.sort((a,b)=>a.lago.localeCompare(b.lago,undefined,{numeric:true}));
   localStorage.setItem('residentes', JSON.stringify(residentes));
   document.getElementById('r_lago').value='';
   document.getElementById('r_nombre1').value='';
   document.getElementById('r_nombre2').value='';
   document.getElementById('r_telefono').value='';
-  renderResidentes();
-  actualizarCasas();
-  toast('✅ Lagos guardado');
+  renderResidentes(); actualizarCasas();
+
+  const ok = await enviarASheet({action:'guardarResidente', ...nuevo});
+  btn.innerHTML = 'Guardar Lagos'; btn.disabled = false;
+  toast(ok ? '✅ Lagos guardado y sincronizado' : '✅ Lagos guardado (sin conexión)');
 }
 
 function renderResidentes() {
   const el=document.getElementById('listaR');
+  if(!el) return;
   el.innerHTML='';
   if(!residentes.length){el.innerHTML='<div style="color:#94a3b8;font-size:12px;text-align:center;padding:12px">No hay Lagos registrados</div>';return;}
   residentes.forEach((r,i)=>{
@@ -743,28 +807,38 @@ function renderResidentes() {
   });
 }
 
-function eliminarResidente(i) {
-  residentes.splice(i,1);
+async function eliminarResidente(i) {
+  const eliminado = residentes.splice(i,1)[0];
   localStorage.setItem('residentes',JSON.stringify(residentes));
   renderResidentes(); actualizarCasas();
+  await enviarASheet({action:'eliminarResidente', lago: eliminado.lago});
 }
 
 // ── FAMILIARES ──
-function guardarFamiliar() {
+async function guardarFamiliar() {
   const nombre    = document.getElementById('f_nombre').value.trim();
   const casa      = document.getElementById('f_casa').value;
   const parentesco= document.getElementById('f_parentesco').value;
   if (!nombre) { toast('⚠️ Ingresa el nombre del familiar'); return; }
-  familiares.push({nombre, casa, parentesco});
+
+  const btn = document.getElementById('btnGuardarFamiliar');
+  btn.innerHTML = '<span class="spinner"></span>Guardando...'; btn.disabled = true;
+
+  const nuevo = {nombre, casa, parentesco};
+  familiares.push(nuevo);
   familiares.sort((a,b)=>a.casa.localeCompare(b.casa,undefined,{numeric:true}));
   localStorage.setItem('familiares',JSON.stringify(familiares));
   document.getElementById('f_nombre').value='';
   renderFamiliares();
-  toast('✅ Familiar guardado');
+
+  const ok = await enviarASheet({action:'guardarFamiliar', ...nuevo});
+  btn.innerHTML = 'Guardar familiar'; btn.disabled = false;
+  toast(ok ? '✅ Familiar guardado y sincronizado' : '✅ Familiar guardado (sin conexión)');
 }
 
 function renderFamiliares() {
   const el=document.getElementById('listaF');
+  if(!el) return;
   el.innerHTML='';
   if(!familiares.length){el.innerHTML='<div style="color:#94a3b8;font-size:12px;text-align:center;padding:12px">No hay familiares registrados</div>';return;}
   familiares.forEach((f,i)=>{
@@ -779,10 +853,11 @@ function renderFamiliares() {
   });
 }
 
-function eliminarFamiliar(i) {
-  familiares.splice(i,1);
+async function eliminarFamiliar(i) {
+  const eliminado = familiares.splice(i,1)[0];
   localStorage.setItem('familiares',JSON.stringify(familiares));
   renderFamiliares();
+  await enviarASheet({action:'eliminarFamiliar', nombre: eliminado.nombre, casa: eliminado.casa});
 }
 
 // ── PERSONAL ──
@@ -795,36 +870,53 @@ function selPersonalTipo(tipo) {
   if (tipo==='casa') actualizarCasasPersonal();
 }
 
-function guardarPersonalCasa() {
+async function guardarPersonalCasa() {
   const casa   = document.getElementById('p_casa').value;
   const nombre = document.getElementById('p_nombre_casa').value.trim();
   const cargo  = document.getElementById('p_cargo_casa').value.trim();
   if (!nombre||!cargo) { toast('⚠️ Ingresa nombre y cargo'); return; }
-  personal.push({tipo:'casa', casa, nombre, cargo});
+
+  const btn = document.getElementById('btnGuardarPCasa');
+  btn.innerHTML = '<span class="spinner"></span>Guardando...'; btn.disabled = true;
+
+  const nuevo = {tipo:'casa', casa, nombre, cargo};
+  personal.push(nuevo);
   personal.sort((a,b)=>(a.casa||'').localeCompare(b.casa||'',undefined,{numeric:true}));
   localStorage.setItem('personal',JSON.stringify(personal));
   document.getElementById('p_nombre_casa').value='';
   document.getElementById('p_cargo_casa').value='';
   renderPersonal();
-  toast('✅ Personal de casa guardado');
+
+  const ok = await enviarASheet({action:'guardarPersonal', ...nuevo});
+  btn.innerHTML = 'Guardar personal de casa'; btn.disabled = false;
+  toast(ok ? '✅ Personal guardado y sincronizado' : '✅ Personal guardado (sin conexión)');
 }
 
-function guardarPersonalComplejo() {
+async function guardarPersonalComplejo() {
   const nombre   = document.getElementById('p_nombre_complejo').value.trim();
   const cargo    = document.getElementById('p_cargo_complejo').value.trim();
   const compania = document.getElementById('p_compania').value.trim();
   if (!nombre||!cargo) { toast('⚠️ Ingresa nombre y cargo'); return; }
-  personal.push({tipo:'complejo', nombre, cargo, compania: compania||'Sin especificar'});
+
+  const btn = document.getElementById('btnGuardarPComplejo');
+  btn.innerHTML = '<span class="spinner"></span>Guardando...'; btn.disabled = true;
+
+  const nuevo = {tipo:'complejo', nombre, cargo, compania: compania||'Sin especificar'};
+  personal.push(nuevo);
   localStorage.setItem('personal',JSON.stringify(personal));
   document.getElementById('p_nombre_complejo').value='';
   document.getElementById('p_cargo_complejo').value='';
   document.getElementById('p_compania').value='';
   renderPersonal();
-  toast('✅ Personal del complejo guardado');
+
+  const ok = await enviarASheet({action:'guardarPersonal', ...nuevo});
+  btn.innerHTML = 'Guardar personal del complejo'; btn.disabled = false;
+  toast(ok ? '✅ Personal guardado y sincronizado' : '✅ Personal guardado (sin conexión)');
 }
 
 function renderPersonal() {
   const el=document.getElementById('listaP');
+  if(!el) return;
   el.innerHTML='';
   if(!personal.length){el.innerHTML='<div style="color:#94a3b8;font-size:12px;text-align:center;padding:12px">No hay personal registrado</div>';return;}
   personal.forEach((p,i)=>{
@@ -843,40 +935,125 @@ function renderPersonal() {
   });
 }
 
-function eliminarPersonal(i) {
-  personal.splice(i,1);
+async function eliminarPersonal(i) {
+  const eliminado = personal.splice(i,1)[0];
   localStorage.setItem('personal',JSON.stringify(personal));
   renderPersonal();
+  await enviarASheet({action:'eliminarPersonal', nombre: eliminado.nombre, tipo: eliminado.tipo});
 }
 
-// ── CARGAR DATOS AL INICIO ──
+// ── CARGA INICIAL ──
 window.onload = function() {
-  const v  = localStorage.getItem('visitas');    if(v)  {visitas=JSON.parse(v);render();}
-  const r  = localStorage.getItem('residentes'); if(r)  {residentes=JSON.parse(r);}
-  const f  = localStorage.getItem('familiares'); if(f)  {familiares=JSON.parse(f);}
-  const p  = localStorage.getItem('personal');   if(p)  {personal=JSON.parse(p);}
-  const rp = localStorage.getItem('reportes');   if(rp) {reportes=JSON.parse(rp);}
+  _cargarLocal(); // carga inmediata desde caché local para no mostrar pantalla vacía
 };
 </script>
 
 <!--
 =================================================================
-APPS SCRIPT PARA GOOGLE SHEETS
+APPS SCRIPT PARA GOOGLE SHEETS — VERSIÓN COMPLETA CON SINCRONIZACIÓN
 Extensiones > Apps Script > pega esto > Implementar > App web
+(Ejecutar como: Yo | Acceso: Cualquier usuario)
 =================================================================
-function doPost(e) {
-  const sheet = SpreadsheetApp
-    .openById('1_2ZA5voyC8MXzyrDNz4NQBKbXyXgYyJ77sMlT7LxTpk')
-    .getActiveSheet();
-  if (sheet.getLastRow()===0) {
-    sheet.appendRow(['Fecha','Hora','Nombre','Tipo','Lagos/Casa','Vehículo','Motivo','Status','Oficial','Turno']);
+
+const SS_ID = '1_2ZA5voyC8MXzyrDNz4NQBKbXyXgYyJ77sMlT7LxTpk';
+
+function getSheet(nombre) {
+  const ss = SpreadsheetApp.openById(SS_ID);
+  let sh = ss.getSheetByName(nombre);
+  if (!sh) {
+    sh = ss.insertSheet(nombre);
+    const headers = {
+      'Visitas':    ['Fecha','Hora','Nombre','Tipo','Lagos/Casa','Vehículo','Motivo','Status','Oficial','Turno'],
+      'Residentes': ['Lago','Nombre1','Nombre2','Telefono'],
+      'Familiares': ['Nombre','Casa','Parentesco'],
+      'Personal':   ['Tipo','Casa','Nombre','Cargo','Compania']
+    };
+    if (headers[nombre]) sh.appendRow(headers[nombre]);
   }
-  const d = JSON.parse(e.postData.contents);
-  if (d.action==='registrarVisita') {
-    sheet.appendRow([d.fecha,d.hora,d.nombre,d.tipo,d.casa,d.vehiculo,d.motivo,d.status,d.registradoPor,d.turno]);
+  return sh;
+}
+
+function doGet(e) {
+  const action = e.parameter.action;
+  if (action === 'leerTodo') {
+    const visitas    = leerHoja('Visitas',    ['fecha','hora','nombre','tipo','casa','vehiculo','motivo','status','registradoPor','turno']);
+    const residentes = leerHoja('Residentes', ['lago','nombre1','nombre2','telefono']);
+    const familiares = leerHoja('Familiares', ['nombre','casa','parentesco']);
+    const personal   = leerHoja('Personal',   ['tipo','casa','nombre','cargo','compania']);
+    return ContentService
+      .createTextOutput(JSON.stringify({visitas, residentes, familiares, personal}))
+      .setMimeType(ContentService.MimeType.JSON);
   }
   return ContentService.createTextOutput('OK');
 }
+
+function leerHoja(nombre, keys) {
+  const sh = getSheet(nombre);
+  const rows = sh.getDataRange().getValues();
+  if (rows.length <= 1) return [];
+  return rows.slice(1).map(r => {
+    const obj = {};
+    keys.forEach((k,i) => obj[k] = r[i] || '');
+    return obj;
+  });
+}
+
+function doPost(e) {
+  const d = JSON.parse(e.postData.contents);
+
+  if (d.action === 'registrarVisita') {
+    const sh = getSheet('Visitas');
+    sh.appendRow([d.fecha,d.hora,d.nombre,d.tipo,d.casa,d.vehiculo,d.motivo,d.status,d.registradoPor,d.turno]);
+  }
+
+  if (d.action === 'guardarResidente') {
+    const sh = getSheet('Residentes');
+    sh.appendRow([d.lago, d.nombre1, d.nombre2||'', d.telefono||'']);
+    ordenarHoja(sh, 1);
+  }
+
+  if (d.action === 'eliminarResidente') {
+    eliminarFila('Residentes', 1, d.lago);
+  }
+
+  if (d.action === 'guardarFamiliar') {
+    const sh = getSheet('Familiares');
+    sh.appendRow([d.nombre, d.casa, d.parentesco]);
+  }
+
+  if (d.action === 'eliminarFamiliar') {
+    eliminarFila('Familiares', 1, d.nombre);
+  }
+
+  if (d.action === 'guardarPersonal') {
+    const sh = getSheet('Personal');
+    sh.appendRow([d.tipo, d.casa||'', d.nombre, d.cargo, d.compania||'']);
+  }
+
+  if (d.action === 'eliminarPersonal') {
+    eliminarFila('Personal', 3, d.nombre);
+  }
+
+  return ContentService.createTextOutput('OK');
+}
+
+function ordenarHoja(sh, col) {
+  const lastRow = sh.getLastRow();
+  if (lastRow <= 2) return;
+  sh.getRange(2, 1, lastRow-1, sh.getLastColumn()).sort(col);
+}
+
+function eliminarFila(nombreHoja, colBusqueda, valor) {
+  const sh = getSheet(nombreHoja);
+  const data = sh.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][colBusqueda - 1]) === String(valor)) {
+      sh.deleteRow(i + 1);
+      break;
+    }
+  }
+}
+
 =================================================================
 -->
 </body>
