@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Villegas System – Guardia Virtual PRO</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { font-family:'Inter',sans-serif; box-sizing:border-box; }
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; padding:10px 22px; border-radius:14px; font-size:13px; display:none; z-index:999; box-shadow:0 4px 20px rgba(0,0,0,0.2); }
+  #toast.show { display:block; animation:fadeIn 0.3s; }
+  @keyframes fadeIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+  .spinner { display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:5px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .lbl { display:block; font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px; margin-top:10px; }
+  .inp { width:100%; background:#f1f5f9; border:1px solid #e2e8f0; padding:10px 12px; border-radius:12px; font-size:13px; color:#1e293b; outline:none; }
+  .inp:focus { border-color:#22c55e; background:#fff; }
+  select.inp { appearance:auto; }
+  textarea.inp { resize:none; }
+  .btn-g    { width:100%; background:#22c55e; border:none; border-radius:12px; padding:12px; color:#fff; font-weight:600; font-size:13px; cursor:pointer; margin-top:8px; }
+  .btn-dark { width:100%; background:#0f172a; border:none; border-radius:12px; padding:12px; color:#fff; font-weight:600; font-size:13px; cursor:pointer; margin-top:8px; }
+  .btn-wp   { width:100%; background:#25D366;  border:none; border-radius:12px; padding:12px; color:#fff; font-weight:600; font-size:13px; cursor:pointer; margin-top:8px; }
+  .card-item { background:#f8fafc; border:1px solid #e2e8f0; padding:10px 12px; border-radius:12px; margin-top:8px; font-size:12px; color:#334155; line-height:1.6; }
+  .card-item b { color:#0f172a; font-size:13px; }
+  .sec-title { font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:.08em; margin-top:14px; margin-bottom:4px; }
+  .badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:10px; font-weight:500; }
+  .menu-btn { background:#f1f5f9; border:none; border-radius:12px; padding:9px 4px; font-size:11px; font-weight:500; color:#475569; cursor:pointer; }
+  .menu-btn.active { background:#0f172a; color:#fff; }
+  .radio-group { display:flex; gap:8px; margin-top:4px; }
+  .radio-opt { flex:1; border:1.5px solid #e2e8f0; border-radius:10px; padding:9px 6px; text-align:center; font-size:12px; font-weight:500; color:#475569; cursor:pointer; }
+  .radio-opt.sel { border-color:#22c55e; background:#f0fdf4; color:#15803d; }
+  .wp-preview { background:#0b3d2e; border-radius:14px; padding:14px 16px; color:#e2fce8; font-size:12px; line-height:1.8; white-space:pre-wrap; font-family:monospace; margin-top:10px; border:1px solid #22c55e33; }
+  .copy-btn { width:100%; background:#075e54; border:none; border-radius:12px; padding:11px; color:#fff; font-weight:600; font-size:13px; cursor:pointer; margin-top:8px; }
+  .hidden { display:none !important; }
+  .del-btn { color:#cbd5e1; font-size:12px; background:none; border:none; cursor:pointer; margin-left:8px; flex-shrink:0; }
+  .del-btn:hover { color:#f87171; }
+</style>
+</head>
+<body class="bg-slate-300 flex justify-center items-center min-h-screen p-4">
+
+<div id="toast"></div>
+
+<div class="w-full max-w-sm bg-white rounded-[38px] shadow-2xl overflow-hidden" style="height:870px">
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login" class="h-full flex flex-col justify-center items-center p-8" style="background:#0f172a">
+  <div class="mb-8 text-center">
+    <div class="mx-auto mb-4 flex items-center justify-center" style="width:78px;height:78px;background:#1e293b;border-radius:22px;border:1.5px solid #334155">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <rect x="5" y="21" width="34" height="18" rx="4" fill="#22c55e"/>
+        <path d="M13 21V16C13 12.13 17.03 9 22 9C26.97 9 31 12.13 31 16V21" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="22" cy="30" r="3.5" fill="white"/>
+        <rect x="20.5" y="30" width="3" height="5" rx="1.5" fill="white"/>
+      </svg>
+    </div>
+    <div class="text-white text-2xl font-bold tracking-tight">Villegas <span style="color:#22c55e">System</span></div>
+    <div class="text-slate-400 text-xs tracking-widest uppercase mt-1">Security Solutions</div>
+    <div class="mx-auto mt-3 mb-4" style="width:36px;height:2px;background:#22c55e;border-radius:2px"></div>
+    <div class="text-slate-400 text-sm">Guardia Virtual PRO</div>
+  </div>
+  <div class="w-full space-y-3">
+    <div class="text-slate-500 text-xs text-center uppercase tracking-widest mb-1">Seleccionar turno</div>
+    <button onclick="iniciar('Enoc Arias','Día')"
+      class="w-full p-4 rounded-2xl text-white font-semibold text-sm" style="background:#22c55e">
+      🌞 &nbsp;Día — Enoc Arias
+    </button>
+    <button onclick="iniciar('Víctor Villegas','Noche')"
+      class="w-full p-4 rounded-2xl text-white font-semibold text-sm" style="background:#3b82f6">
+      🌙 &nbsp;Noche — Víctor Villegas
+    </button>
+  </div>
+  <div class="mt-10 text-slate-600 text-xs text-center">© 2025 Villegas System · Todos los derechos reservados</div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hidden h-full flex flex-col">
+
+  <!-- HEADER -->
+  <div style="background:#0f172a" class="px-5 pt-9 pb-4 flex-shrink-0">
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2">
+        <div style="width:32px;height:32px;background:#1e293b;border-radius:9px;border:1px solid #334155;display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" viewBox="0 0 44 44" fill="none">
+            <rect x="5" y="21" width="34" height="18" rx="4" fill="#22c55e"/>
+            <path d="M13 21V16C13 12.13 17.03 9 22 9C26.97 9 31 12.13 31 16V21" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="22" cy="30" r="3.5" fill="white"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-white font-bold text-sm leading-tight">Villegas <span style="color:#22c55e">System</span></div>
+          <div class="text-slate-400 text-xs">Guardia Virtual PRO</div>
+        </div>
+      </div>
+      <button onclick="cerrarSesion()" class="text-slate-400 text-xs px-3 py-1 rounded-lg" style="border:1px solid #334155">↩ Salir</button>
+    </div>
+    <div class="text-slate-400 text-xs pt-2" style="border-top:1px solid #1e293b" id="infoTurno"></div>
+  </div>
+
+  <!-- MENÚ -->
+  <div class="px-3 pt-3 pb-1 grid grid-cols-3 gap-2 flex-shrink-0">
+    <button onclick="mostrar('visitas')"      id="btn_visitas"      class="menu-btn">📋 Visitas</button>
+    <button onclick="mostrar('estadisticas')" id="btn_estadisticas" class="menu-btn">📊 Stats</button>
+    <button onclick="mostrar('reportes')"     id="btn_reportes"     class="menu-btn">📢 WP</button>
+    <button onclick="mostrar('residentes')"   id="btn_residentes"   class="menu-btn">🏠 Lagos</button>
+    <button onclick="mostrar('familiares')"   id="btn_familiares"   class="menu-btn">👨‍👩‍👧 Fam.</button>
+    <button onclick="mostrar('personal')"     id="btn_personal"     class="menu-btn">🛠 Personal</button>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="px-3 pb-4 overflow-y-auto flex-1">
+
+    <!-- ===== VISITAS ===== -->
+    <div id="visitas" class="hidden">
+
+      <label class="lbl">Tipo de ingreso</label>
+      <select id="tipo" onchange="actualizarCampos()" class="inp">
+        <option>Visitante</option>
+        <option>Residente</option>
+        <option>Familiar</option>
+        <option>Personal autorizado</option>
+        <option>Personal del complejo</option>
+        <option>Delivery</option>
+        <option>Taxi / Uber</option>
+        <option>Seguridad preventiva</option>
+        <option>Aseo</option>
+        <option>Inspección (Corredor)</option>
+      </select>
+
+      <!-- NOMBRE: select referencial o input libre según tipo -->
+      <label class="lbl" id="lbl_nombre">Nombre</label>
+      <select id="listaPersonas" class="inp hidden" onchange="autoCompletarCasa()"></select>
+      <input id="nombre" placeholder="Nombre completo" class="inp">
+
+      <!-- CASA: select referencial o libre según tipo -->
+      <label class="lbl" id="lbl_casa">Lagos / Casa</label>
+      <select id="casa" class="inp"></select>
+      <input id="casaLibre" placeholder="Lagos / Casa" class="inp hidden">
+
+      <label class="lbl">Vehículo</label>
+      <select id="vehiculo" class="inp">
+        <option>A pie</option><option>Motor</option><option>Sedan</option>
+        <option>SUV</option><option>Pickup</option><option>Van</option>
+        <option>Camión</option><option>Carrito de golf</option>
+      </select>
+
+      <label class="lbl">Motivo</label>
+      <input id="motivo" placeholder="Motivo de visita" class="inp">
+
+      <label class="lbl">Status</label>
+      <select id="status" class="inp">
+        <option>Aprobado por llamada</option>
+        <option>En lista autorizada</option>
+        <option>Pendiente</option>
+        <option>Denegado</option>
+      </select>
+
+      <button id="btnRegistrar" onclick="registrar()" class="btn-g">Registrar entrada</button>
+      <a href="https://docs.google.com/spreadsheets/d/1_2ZA5voyC8MXzyrDNz4NQBKbXyXgYyJ77sMlT7LxTpk/edit"
+         target="_blank" class="btn-dark block text-center" style="text-decoration:none">📊 Ver Reporte en Sheets</a>
+      <div class="sec-title">Registros del turno</div>
+      <div id="lista"></div>
+    </div>
+
+    <!-- ===== ESTADÍSTICAS ===== -->
+    <div id="estadisticas" class="hidden">
+      <div class="card-item flex justify-between">Total visitas <b id="st_total">0</b></div>
+      <div class="card-item flex justify-between">Turno Día <b id="st_dia">0</b></div>
+      <div class="card-item flex justify-between">Turno Noche <b id="st_noche">0</b></div>
+      <div class="card-item flex justify-between">Seguridad preventiva <b id="st_seguridad">0</b></div>
+      <div class="card-item flex justify-between">Aseo <b id="st_aseo">0</b></div>
+      <div class="card-item flex justify-between">Delivery <b id="st_delivery">0</b></div>
+      <div class="card-item flex justify-between">Residentes <b id="st_residentes">0</b></div>
+      <div class="card-item flex justify-between">Hora más activa <b id="st_hora">-</b></div>
+    </div>
+
+    <!-- ===== REPORTE WHATSAPP ===== -->
+    <div id="reportes" class="hidden">
+      <div class="sec-title">Reporte de turno</div>
+
+      <label class="lbl">Interacciones del turno</label>
+      <input id="rp_interacciones" type="number" placeholder="Ej: 14" class="inp">
+
+      <label class="lbl">Cámaras</label>
+      <div class="radio-group">
+        <div class="radio-opt sel" id="cam_ok"    onclick="selRadio('cam','ok')">✅ OK</div>
+        <div class="radio-opt"    id="cam_falla"  onclick="selRadio('cam','falla')">❌ Falla</div>
+      </div>
+      <label class="lbl">E-Security</label>
+      <div class="radio-group">
+        <div class="radio-opt sel" id="esec_ok"   onclick="selRadio('esec','ok')">✅ OK</div>
+        <div class="radio-opt"    id="esec_falla" onclick="selRadio('esec','falla')">❌ Falla</div>
+      </div>
+      <label class="lbl">Llamadas</label>
+      <div class="radio-group">
+        <div class="radio-opt sel" id="llam_ok"   onclick="selRadio('llam','ok')">✅ OK</div>
+        <div class="radio-opt"    id="llam_falla" onclick="selRadio('llam','falla')">❌ Falla</div>
+      </div>
+      <label class="lbl">Palgate</label>
+      <div class="radio-group">
+        <div class="radio-opt sel" id="pal_ok"    onclick="selRadio('pal','ok')">✅ OK</div>
+        <div class="radio-opt"    id="pal_falla"  onclick="selRadio('pal','falla')">❌ Falla</div>
+      </div>
+      <label class="lbl">Comando 1</label>
+      <div class="radio-group">
+        <div class="radio-opt sel" id="cmd_ok"    onclick="selRadio('cmd','ok')">✅ OK</div>
+        <div class="radio-opt"    id="cmd_falla"  onclick="selRadio('cmd','falla')">❌ Falla</div>
+      </div>
+
+      <label class="lbl">Zonas críticas revisadas</label>
+      <input id="rp_zonas" placeholder="Ej: Entrada norte, Estacionamiento" class="inp">
+
+      <label class="lbl">Novedades del turno</label>
+      <textarea id="rp_novedades" placeholder="Describe las novedades del turno..." class="inp" style="height:70px"></textarea>
+
+      <button onclick="generarReporteWP()" class="btn-g">🔄 Generar mensaje WP</button>
+
+      <div id="wpPreviewBox" class="hidden">
+        <div class="wp-preview" id="wpTexto"></div>
+        <button onclick="copiarWP()" class="copy-btn">📋 Copiar mensaje</button>
+      </div>
+
+      <div class="sec-title" style="margin-top:16px">Reportes anteriores</div>
+      <div id="listaReportes"></div>
+    </div>
+
+    <!-- ===== RESIDENTES / LAGOS ===== -->
+    <div id="residentes" class="hidden">
+      <div class="sec-title">Registrar Lagos</div>
+
+      <label class="lbl">Número de Lagos</label>
+      <input id="r_lago" placeholder="Ej: Lagos 5, Lagos 12-A..." class="inp">
+
+      <label class="lbl">Residente 1</label>
+      <input id="r_nombre1" placeholder="Nombre del residente 1" class="inp">
+
+      <label class="lbl">Residente 2 (opcional)</label>
+      <input id="r_nombre2" placeholder="Nombre del residente 2" class="inp">
+
+      <label class="lbl">Teléfono de contacto</label>
+      <input id="r_telefono" placeholder="Ej: +58 412 000 0000" class="inp" type="tel">
+
+      <button onclick="guardarResidente()" class="btn-g">Guardar Lagos</button>
+
+      <div class="sec-title">Lagos registrados</div>
+      <div id="listaR"></div>
+    </div>
+
+    <!-- ===== FAMILIARES ===== -->
+    <div id="familiares" class="hidden">
+      <div class="sec-title">Registrar familiar</div>
+
+      <label class="lbl">Nombre del familiar</label>
+      <input id="f_nombre" placeholder="Nombre completo" class="inp">
+
+      <label class="lbl">Lagos / Casa (de los residentes registrados)</label>
+      <select id="f_casa" class="inp"></select>
+
+      <label class="lbl">Parentesco con el residente</label>
+      <select id="f_parentesco" class="inp">
+        <option>Esposo/a</option>
+        <option>Hijo/a</option>
+        <option>Padre / Madre</option>
+        <option>Hermano/a</option>
+        <option>Abuelo/a</option>
+        <option>Nieto/a</option>
+        <option>Tío/a</option>
+        <option>Primo/a</option>
+        <option>Cuñado/a</option>
+        <option>Suegro/a</option>
+        <option>Otro familiar</option>
+      </select>
+
+      <button onclick="guardarFamiliar()" class="btn-g">Guardar familiar</button>
+
+      <div class="sec-title">Familiares registrados</div>
+      <div id="listaF"></div>
+    </div>
+
+    <!-- ===== PERSONAL ===== -->
+    <div id="personal" class="hidden">
+      <div class="sec-title">Registrar personal</div>
+
+      <label class="lbl">¿Es personal autorizado de alguna casa o del complejo?</label>
+      <div class="radio-group" style="margin-top:4px;margin-bottom:4px">
+        <div class="radio-opt" id="ptipo_casa"     onclick="selPersonalTipo('casa')">🏠 De la casa</div>
+        <div class="radio-opt" id="ptipo_complejo" onclick="selPersonalTipo('complejo')">🏢 Del complejo</div>
+      </div>
+
+      <!-- PERSONAL DE LA CASA -->
+      <div id="p_secCasa" class="hidden">
+        <label class="lbl">Lagos / Casa</label>
+        <select id="p_casa" class="inp"></select>
+        <label class="lbl">Nombre</label>
+        <input id="p_nombre_casa" placeholder="Nombre completo" class="inp">
+        <label class="lbl">Cargo</label>
+        <input id="p_cargo_casa" placeholder="Ej: Doméstica, Plomero, Electricista..." class="inp">
+        <button onclick="guardarPersonalCasa()" class="btn-g">Guardar personal de casa</button>
+      </div>
+
+      <!-- PERSONAL DEL COMPLEJO -->
+      <div id="p_secComplejo" class="hidden">
+        <label class="lbl">Nombre</label>
+        <input id="p_nombre_complejo" placeholder="Nombre completo" class="inp">
+        <label class="lbl">Cargo</label>
+        <input id="p_cargo_complejo" placeholder="Ej: Técnico, Supervisor, Vigilante..." class="inp">
+        <label class="lbl">Compañía / Empresa</label>
+        <input id="p_compania" placeholder="Ej: Servicios ABC, C.A." class="inp">
+        <button onclick="guardarPersonalComplejo()" class="btn-g">Guardar personal del complejo</button>
+      </div>
+
+      <div class="sec-title">Personal registrado</div>
+      <div id="listaP"></div>
+    </div>
+
+  </div>
+</div><!-- /app -->
+</div><!-- /phone -->
+
+<script>
+// ── CONFIGURACIÓN GOOGLE SHEETS ──
+const SHEET_URL = "TU_URL_AQUI";
+
+let residentes = [], familiares = [], personal = [], visitas = [], reportes = [];
+let guardia = "", turno = "";
+let personalTipo = "";
+let radios = { cam:'ok', esec:'ok', llam:'ok', pal:'ok', cmd:'ok' };
+
+// ── TOAST ──
+function toast(msg, ms=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// ── LOGIN ──
+function iniciar(g, t) {
+  guardia = g; turno = t;
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  const ahora = new Date();
+  document.getElementById('infoTurno').innerText =
+    `👤 ${g}  ·  Turno ${t}  ·  ${ahora.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}`;
+  actualizarCasas();
+  mostrar('visitas');
+}
+
+function cerrarSesion() {
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login').classList.remove('hidden');
+}
+
+// ── MENÚ ──
+function mostrar(s) {
+  ['visitas','estadisticas','reportes','residentes','familiares','personal'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+    const b = document.getElementById('btn_'+id);
+    if (b) b.classList.remove('active');
+  });
+  document.getElementById(s).classList.remove('hidden');
+  const b = document.getElementById('btn_'+s);
+  if (b) b.classList.add('active');
+  if (s==='estadisticas') render();
+  if (s==='reportes')     renderReportes();
+  if (s==='residentes')   renderResidentes();
+  if (s==='familiares')   { actualizarCasasFamiliares(); renderFamiliares(); }
+  if (s==='personal')     { renderPersonal(); }
+}
+
+// ── CASAS / LAGOS ──
+function actualizarCasas() {
+  const opciones = residentes.length
+    ? [...new Set(residentes.map(r => r.lago))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
+    : [];
+  // Para visitas: si no hay residentes registrados, mostrar Lagos 1..30
+  const opVisitas = opciones.length ? opciones : [...Array(30)].map((_,i)=>`Lagos ${i+1}`);
+  const sel = document.getElementById('casa');
+  if (sel) { const p=sel.value; sel.innerHTML=opVisitas.map(c=>`<option>${c}</option>`).join(''); if(p) sel.value=p; }
+  actualizarCasasFamiliares();
+  actualizarCasasPersonal();
+}
+
+function actualizarCasasFamiliares() {
+  const opciones = residentes.length
+    ? [...new Set(residentes.map(r => r.lago))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
+    : [...Array(30)].map((_,i)=>`Lagos ${i+1}`);
+  const sel = document.getElementById('f_casa');
+  if (sel) { const p=sel.value; sel.innerHTML=opciones.map(c=>`<option>${c}</option>`).join(''); if(p) sel.value=p; }
+}
+
+function actualizarCasasPersonal() {
+  const opciones = residentes.length
+    ? [...new Set(residentes.map(r => r.lago))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
+    : [...Array(30)].map((_,i)=>`Lagos ${i+1}`);
+  const sel = document.getElementById('p_casa');
+  if (sel) { const p=sel.value; sel.innerHTML=opciones.map(c=>`<option>${c}</option>`).join(''); if(p) sel.value=p; }
+}
+
+// ── CAMPOS DINÁMICOS VISITAS (INTELIGENTES) ──
+// Mapa interno: valor del select de personas → lago/casa correspondiente
+let _mapaPersonaCasa = {};
+
+function actualizarCampos() {
+  const tipo      = document.getElementById('tipo').value;
+  const lista     = document.getElementById('listaPersonas');
+  const nomInput  = document.getElementById('nombre');
+  const casaSel   = document.getElementById('casa');
+  const casaLibre = document.getElementById('casaLibre');
+  const lblCasa   = document.getElementById('lbl_casa');
+
+  // Reset
+  lista.innerHTML = '';
+  lista.classList.add('hidden');
+  nomInput.classList.remove('hidden');
+  nomInput.value = '';
+  casaSel.classList.remove('hidden');
+  casaLibre.classList.add('hidden');
+  casaLibre.value = '';
+  _mapaPersonaCasa = {};
+
+  // ── RESIDENTE ──
+  if (tipo === 'Residente') {
+    if (residentes.length) {
+      residentes.forEach(r => {
+        [r.nombre1, r.nombre2].filter(Boolean).forEach(n => {
+          const key = `${n} — ${r.lago}`;
+          lista.innerHTML += `<option value="${key}">${n} — ${r.lago}</option>`;
+          _mapaPersonaCasa[key] = r.lago;
+        });
+      });
+      lista.classList.remove('hidden');
+      nomInput.classList.add('hidden');
+      // Casa se autocompleta al seleccionar
+      casaSel.classList.add('hidden');
+      casaLibre.classList.remove('hidden');
+      lblCasa.textContent = 'Lagos (autocompletado)';
+      autoCompletarCasa();
+    } else {
+      nomInput.placeholder = 'Nombre del residente';
+      lblCasa.textContent = 'Lagos / Casa';
+      _rellenarCasasRegistradas(casaSel);
+    }
+
+  // ── FAMILIAR ──
+  } else if (tipo === 'Familiar') {
+    if (familiares.length) {
+      familiares.forEach(f => {
+        const key = `${f.nombre} (${f.parentesco} — ${f.casa})`;
+        lista.innerHTML += `<option value="${key}">${f.nombre} · ${f.parentesco} · ${f.casa}</option>`;
+        _mapaPersonaCasa[key] = f.casa;
+      });
+      lista.classList.remove('hidden');
+      nomInput.classList.add('hidden');
+      casaSel.classList.add('hidden');
+      casaLibre.classList.remove('hidden');
+      lblCasa.textContent = 'Lagos (autocompletado)';
+      autoCompletarCasa();
+    } else {
+      nomInput.placeholder = 'Nombre del familiar';
+      lblCasa.textContent = 'Lagos / Casa';
+      _rellenarCasasRegistradas(casaSel);
+    }
+
+  // ── PERSONAL AUTORIZADO (de la casa) ──
+  } else if (tipo === 'Personal autorizado') {
+    const pool = personal.filter(p => p.tipo === 'casa');
+    if (pool.length) {
+      pool.forEach(p => {
+        const key = `${p.nombre} · ${p.cargo} (${p.casa})`;
+        lista.innerHTML += `<option value="${key}">${p.nombre} — ${p.cargo} · ${p.casa}</option>`;
+        _mapaPersonaCasa[key] = p.casa;
+      });
+      lista.classList.remove('hidden');
+      nomInput.classList.add('hidden');
+      casaSel.classList.add('hidden');
+      casaLibre.classList.remove('hidden');
+      lblCasa.textContent = 'Lagos (autocompletado)';
+      autoCompletarCasa();
+    } else {
+      nomInput.placeholder = 'Nombre del personal';
+      lblCasa.textContent = 'Lagos / Casa';
+      _rellenarCasasRegistradas(casaSel);
+    }
+
+  // ── PERSONAL DEL COMPLEJO ──
+  } else if (tipo === 'Personal del complejo') {
+    const pool = personal.filter(p => p.tipo === 'complejo');
+    if (pool.length) {
+      pool.forEach(p => {
+        const key = `${p.nombre} · ${p.cargo} — ${p.compania}`;
+        lista.innerHTML += `<option value="${key}">${p.nombre} — ${p.cargo} · ${p.compania}</option>`;
+        _mapaPersonaCasa[key] = 'Área común';
+      });
+      lista.classList.remove('hidden');
+      nomInput.classList.add('hidden');
+      // Para personal del complejo la casa es área común, mostrar select con áreas
+      casaSel.innerHTML = '<option>Área común</option><option>Corredor</option><option>Estacionamiento</option><option>Portería</option><option>Piscina</option><option>Salón</option>';
+      casaSel.classList.remove('hidden');
+      casaLibre.classList.add('hidden');
+      lblCasa.textContent = 'Área del complejo';
+    } else {
+      nomInput.placeholder = 'Nombre del personal';
+      lblCasa.textContent = 'Área del complejo';
+      casaSel.innerHTML = '<option>Área común</option><option>Corredor</option><option>Estacionamiento</option><option>Portería</option><option>Piscina</option><option>Salón</option>';
+    }
+
+  // ── TIPOS LIBRES (Visitante, Delivery, Taxi, etc.) ──
+  } else {
+    nomInput.placeholder = tipo === 'Delivery' ? 'Empresa o nombre del repartidor'
+      : tipo === 'Taxi / Uber' ? 'Nombre del conductor / empresa'
+      : tipo === 'Seguridad preventiva' ? 'Nombre del oficial'
+      : tipo === 'Aseo' ? 'Nombre del personal de aseo'
+      : tipo === 'Inspección (Corredor)' ? 'Nombre del inspector'
+      : 'Nombre completo';
+    lblCasa.textContent = tipo === 'Inspección (Corredor)' ? 'Corredor / Área'
+      : tipo === 'Seguridad preventiva' || tipo === 'Aseo' ? 'Área asignada'
+      : 'Lagos / Casa a visitar';
+    _rellenarCasasRegistradas(casaSel);
+  }
+}
+
+// Llena el select de casa con los lagos registrados (o Lagos 1-30 si no hay)
+function _rellenarCasasRegistradas(sel) {
+  const opciones = residentes.length
+    ? [...new Set(residentes.map(r => r.lago))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
+    : [...Array(30)].map((_,i)=>`Lagos ${i+1}`);
+  sel.innerHTML = opciones.map(c=>`<option>${c}</option>`).join('');
+}
+
+// Autocompleta la casa cuando se elige una persona del select referencial
+function autoCompletarCasa() {
+  const val = document.getElementById('listaPersonas').value;
+  const casaLibre = document.getElementById('casaLibre');
+  if (_mapaPersonaCasa[val]) {
+    casaLibre.value = _mapaPersonaCasa[val];
+  }
+}
+
+// ── REGISTRAR VISITA ──
+async function registrar() {
+  const usaLista  = !document.getElementById('listaPersonas').classList.contains('hidden');
+  const usaLibre  = !document.getElementById('casaLibre').classList.contains('hidden');
+  const nombreVal = usaLista
+    ? document.getElementById('listaPersonas').value
+    : document.getElementById('nombre').value.trim();
+  const casaVal = usaLibre
+    ? document.getElementById('casaLibre').value.trim()
+    : document.getElementById('casa').value;
+  if (!nombreVal) { toast('⚠️ Ingresa el nombre'); return; }
+  if (!casaVal)   { toast('⚠️ Indica el Lagos o casa'); return; }
+  const fecha = new Date();
+  const data = {
+    fecha: fecha.toLocaleDateString('es-ES'),
+    hora: fecha.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+    nombre: nombreVal,
+    tipo: document.getElementById('tipo').value,
+    casa: casaVal,
+    vehiculo: document.getElementById('vehiculo').value,
+    motivo: document.getElementById('motivo').value || '-',
+    status: document.getElementById('status').value,
+    registradoPor: guardia,
+    turno: turno,
+    horaNum: fecha.getHours()
+  };
+  visitas.unshift(data);
+  localStorage.setItem('visitas', JSON.stringify(visitas));
+  document.getElementById('nombre').value = '';
+  document.getElementById('motivo').value = '';
+  render();
+  toast('✅ Entrada registrada');
+  enviarASheet(data);
+}
+
+// ── GOOGLE SHEETS ──
+async function enviarASheet(data) {
+  if (!SHEET_URL || SHEET_URL==='TU_URL_AQUI') return;
+  const btn = document.getElementById('btnRegistrar');
+  btn.innerHTML = '<span class="spinner"></span>Enviando...';
+  btn.disabled = true;
+  try {
+    await fetch(SHEET_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'registrarVisita',...data})
+    });
+    toast('📊 Guardado en Google Sheets');
+  } catch(e) {
+    toast('⚠️ Sin conexión a Sheets (guardado local)');
+  } finally {
+    btn.innerHTML = 'Registrar entrada';
+    btn.disabled = false;
+  }
+}
+
+// ── RENDER VISITAS ──
+function render() {
+  const lista = document.getElementById('lista');
+  lista.innerHTML='';
+  let total=0,dia=0,noche=0,seg=0,aseo=0,delivery=0,res=0,horas={};
+  const colores = {
+    'Aprobado por llamada':['#dcfce7','#15803d'],
+    'En lista autorizada' :['#dbeafe','#1d4ed8'],
+    'Pendiente'           :['#fef9c3','#854d0e'],
+    'Denegado'            :['#fee2e2','#991b1b']
+  };
+  visitas.forEach(v=>{
+    total++;
+    if(v.turno==='Día') dia++; else noche++;
+    if(v.tipo==='Seguridad preventiva') seg++;
+    if(v.tipo==='Aseo') aseo++;
+    if(v.tipo==='Delivery') delivery++;
+    if(v.tipo==='Residente') res++;
+    horas[v.horaNum]=(horas[v.horaNum]||0)+1;
+    const [bg,color]=colores[v.status]||['#f1f5f9','#475569'];
+    lista.innerHTML+=`
+      <div class="card-item">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <b>${v.nombre}</b>
+          <span class="badge" style="background:${bg};color:${color}">${v.status}</span>
+        </div>
+        <div style="font-size:11px;color:#64748b;margin-top:3px">🏷 ${v.tipo} · 🏠 ${v.casa} · 🚗 ${v.vehiculo}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">👮 ${v.registradoPor} · ${v.turno} · ${v.hora}</div>
+        ${v.motivo&&v.motivo!=='-'?`<div style="font-size:11px;color:#94a3b8;margin-top:2px">📝 ${v.motivo}</div>`:''}
+      </div>`;
+  });
+  let maxHora=null,max=0;
+  for(let h in horas){if(horas[h]>max){max=horas[h];maxHora=h;}}
+  document.getElementById('st_total').innerText=total;
+  document.getElementById('st_dia').innerText=dia;
+  document.getElementById('st_noche').innerText=noche;
+  document.getElementById('st_seguridad').innerText=seg;
+  document.getElementById('st_aseo').innerText=aseo;
+  document.getElementById('st_delivery').innerText=delivery;
+  document.getElementById('st_residentes').innerText=res;
+  document.getElementById('st_hora').innerText=maxHora!==null?maxHora+':00':'-';
+}
+
+// ── RADIO BUTTONS ──
+function selRadio(grupo, val) {
+  radios[grupo]=val;
+  document.getElementById(grupo+'_ok').classList.toggle('sel', val==='ok');
+  document.getElementById(grupo+'_falla').classList.toggle('sel', val==='falla');
+}
+
+// ── REPORTE WHATSAPP ──
+function generarReporteWP() {
+  const interacciones = document.getElementById('rp_interacciones').value||'N/D';
+  const zonas         = document.getElementById('rp_zonas').value||'N/D';
+  const novedades     = document.getElementById('rp_novedades').value||'Sin novedades';
+  const ahora = new Date();
+  const estado = k => radios[k]==='ok' ? '✅' : '❌';
+
+  const msg =
+`🛡 *VILLEGAS SYSTEM – GUARDIA VIRTUAL PRO*
+━━━━━━━━━━━━━━━━━━━━
+📅 ${ahora.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+🕐 Turno ${turno} · ${ahora.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}
+👮 Oficial: ${guardia}
+━━━━━━━━━━━━━━━━━━━━
+📊 *RESUMEN DEL TURNO*
+• Interacciones registradas: ${interacciones}
+━━━━━━━━━━━━━━━━━━━━
+🔧 *ESTADO DE SISTEMAS*
+${estado('cam')} Cámaras
+${estado('esec')} E-Security
+${estado('llam')} Llamadas
+${estado('pal')} Palgate
+${estado('cmd')} Comando 1
+━━━━━━━━━━━━━━━━━━━━
+📍 *ZONAS REVISADAS*
+${zonas}
+━━━━━━━━━━━━━━━━━━━━
+📝 *NOVEDADES*
+${novedades}
+━━━━━━━━━━━━━━━━━━━━
+_Reporte generado por Villegas System_`;
+
+  document.getElementById('wpTexto').textContent = msg;
+  document.getElementById('wpPreviewBox').classList.remove('hidden');
+
+  reportes.unshift({
+    guardia, turno,
+    fecha: ahora.toLocaleDateString('es-ES'),
+    hora: ahora.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+    interacciones, novedades
+  });
+  localStorage.setItem('reportes', JSON.stringify(reportes));
+}
+
+function copiarWP() {
+  const texto = document.getElementById('wpTexto').textContent;
+  navigator.clipboard.writeText(texto).then(()=>toast('✅ Mensaje copiado — pégalo en WhatsApp'));
+}
+
+function renderReportes() {
+  const el = document.getElementById('listaReportes');
+  el.innerHTML='';
+  if(!reportes.length){el.innerHTML='<div style="color:#94a3b8;font-size:12px;text-align:center;padding:12px">No hay reportes anteriores</div>';return;}
+  reportes.forEach(r=>{
+    el.innerHTML+=`<div class="card-item">
+      <b>${r.turno} · ${r.hora}</b><br>
+      <span style="font-size:11px;color:#64748b">👮 ${r.guardia} · ${r.fecha}</span><br>
+      <span style="font-size:11px;color:#94a3b8">📝 ${r.novedades||'Sin novedades'}</span>
+    </div>`;
+  });
+}
+
+// ── RESIDENTES / LAGOS ──
+function guardarResidente() {
+  const lago     = document.getElementById('r_lago').value.trim();
+  const nombre1  = document.getElementById('r_nombre1').value.trim();
+  const nombre2  = document.getElementById('r_nombre2').value.trim();
+  const telefono = document.getElementById('r_telefono').value.trim();
+  if (!lago||!nombre1) { toast('⚠️ Ingresa el número de Lagos y el Residente 1'); return; }
+  residentes.push({lago, nombre1, nombre2, telefono});
+  residentes.sort((a,b)=>a.lago.localeCompare(b.lago,undefined,{numeric:true}));
+  localStorage.setItem('residentes', JSON.stringify(residentes));
+  document.getElementById('r_lago').value='';
+  document.getElementById('r_nombre1').value='';
+  document.getElementById('r_nombre2').value='';
+  document.getElementById('r_telefono').value='';
+  renderResidentes();
+  actualizarCasas();
+  toast('✅ Lagos guardado');
+}
+
+function renderResidentes() {
+  const el=document.getElementById('listaR');
+  el.innerHTML='';
+  if(!residentes.length){el.innerHTML='<div style="color:#94a3b8;font-size:12px;text-align:center;padding:12px">No hay Lagos registrados</div>';return;}
+  residentes.forEach((r,i)=>{
+    el.innerHTML+=`
+      <div class="card-item" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <b>${r.lago}</b><br>
+          <span style="font-size:11px;color:#475569">👤 ${r.nombre1}</span>
+          ${r.nombre2?`<br><span style="font-size:11px;color:#475569">👤 ${r.nombre2}</span>`:''}
+          ${r.telefono?`<br><span style="font-size:11px;color:#94a3b8">📞 ${r.telefono}</span>`:''}
+        </div>
+        <button class="del-btn" onclick="eliminarResidente(${i})">✕</button>
+      </div>`;
+  });
+}
+
+function eliminarResidente(i) {
+  residentes.splice(i,1);
+  localStorage.setItem('residentes',JSON.stringify(residentes));
+  renderResidentes(); actualizarCasas();
+}
+
+// ── FAMILIARES ──
+function guardarFamiliar() {
+  const nombre    = document.getElementById('f_nombre').value.trim();
+  const casa      = document.getElementById('f_casa').value;
+  const parentesco= document.getElementById('f_parentesco').value;
+  if (!nombre) { toast('⚠️ Ingresa el nombre del familiar'); return; }
+  familiares.push({nombre, casa, parentesco});
+  familiares.sort((a,b)=>a.casa.localeCompare(b.casa,undefined,{numeric:true}));
+  localStorage.setItem('familiares',JSON.stringify(familiares));
+  document.getElementById('f_nombre').value='';
+  renderFamiliares();
+  toast('✅ Familiar guardado');
+}
+
+function renderFamiliares() {
+  const el=document.getElementById('listaF');
+  el.innerHTML='';
+  if(!familiares.length){el.innerHTML='<div style="color:#94a3b8;font-size:12px;text-align:center;padding:12px">No hay familiares registrados</div>';return;}
+  familiares.forEach((f,i)=>{
+    el.innerHTML+=`
+      <div class="card-item" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <b>${f.nombre}</b><br>
+          <span style="font-size:11px;color:#475569">🏠 ${f.casa} &nbsp;·&nbsp; 👥 ${f.parentesco}</span>
+        </div>
+        <button class="del-btn" onclick="eliminarFamiliar(${i})">✕</button>
+      </div>`;
+  });
+}
+
+function eliminarFamiliar(i) {
+  familiares.splice(i,1);
+  localStorage.setItem('familiares',JSON.stringify(familiares));
+  renderFamiliares();
+}
+
+// ── PERSONAL ──
+function selPersonalTipo(tipo) {
+  personalTipo = tipo;
+  document.getElementById('ptipo_casa').classList.toggle('sel', tipo==='casa');
+  document.getElementById('ptipo_complejo').classList.toggle('sel', tipo==='complejo');
+  document.getElementById('p_secCasa').classList.toggle('hidden', tipo!=='casa');
+  document.getElementById('p_secComplejo').classList.toggle('hidden', tipo!=='complejo');
+  if (tipo==='casa') actualizarCasasPersonal();
+}
+
+function guardarPersonalCasa() {
+  const casa   = document.getElementById('p_casa').value;
+  const nombre = document.getElementById('p_nombre_casa').value.trim();
+  const cargo  = document.getElementById('p_cargo_casa').value.trim();
+  if (!nombre||!cargo) { toast('⚠️ Ingresa nombre y cargo'); return; }
+  personal.push({tipo:'casa', casa, nombre, cargo});
+  personal.sort((a,b)=>(a.casa||'').localeCompare(b.casa||'',undefined,{numeric:true}));
+  localStorage.setItem('personal',JSON.stringify(personal));
+  document.getElementById('p_nombre_casa').value='';
+  document.getElementById('p_cargo_casa').value='';
+  renderPersonal();
+  toast('✅ Personal de casa guardado');
+}
+
+function guardarPersonalComplejo() {
+  const nombre   = document.getElementById('p_nombre_complejo').value.trim();
+  const cargo    = document.getElementById('p_cargo_complejo').value.trim();
+  const compania = document.getElementById('p_compania').value.trim();
+  if (!nombre||!cargo) { toast('⚠️ Ingresa nombre y cargo'); return; }
+  personal.push({tipo:'complejo', nombre, cargo, compania: compania||'Sin especificar'});
+  localStorage.setItem('personal',JSON.stringify(personal));
+  document.getElementById('p_nombre_complejo').value='';
+  document.getElementById('p_cargo_complejo').value='';
+  document.getElementById('p_compania').value='';
+  renderPersonal();
+  toast('✅ Personal del complejo guardado');
+}
+
+function renderPersonal() {
+  const el=document.getElementById('listaP');
+  el.innerHTML='';
+  if(!personal.length){el.innerHTML='<div style="color:#94a3b8;font-size:12px;text-align:center;padding:12px">No hay personal registrado</div>';return;}
+  personal.forEach((p,i)=>{
+    const sub = p.tipo==='complejo'
+      ? `🏢 ${p.compania} · ${p.cargo}`
+      : `🏠 ${p.casa} · ${p.cargo}`;
+    el.innerHTML+=`
+      <div class="card-item" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <b>${p.nombre}</b>
+          <span class="badge" style="background:${p.tipo==='casa'?'#dbeafe':'#f0fdf4'};color:${p.tipo==='casa'?'#1d4ed8':'#15803d'};margin-left:6px;font-size:10px">${p.tipo==='casa'?'Casa':'Complejo'}</span><br>
+          <span style="font-size:11px;color:#475569">${sub}</span>
+        </div>
+        <button class="del-btn" onclick="eliminarPersonal(${i})">✕</button>
+      </div>`;
+  });
+}
+
+function eliminarPersonal(i) {
+  personal.splice(i,1);
+  localStorage.setItem('personal',JSON.stringify(personal));
+  renderPersonal();
+}
+
+// ── CARGAR DATOS AL INICIO ──
+window.onload = function() {
+  const v  = localStorage.getItem('visitas');    if(v)  {visitas=JSON.parse(v);render();}
+  const r  = localStorage.getItem('residentes'); if(r)  {residentes=JSON.parse(r);}
+  const f  = localStorage.getItem('familiares'); if(f)  {familiares=JSON.parse(f);}
+  const p  = localStorage.getItem('personal');   if(p)  {personal=JSON.parse(p);}
+  const rp = localStorage.getItem('reportes');   if(rp) {reportes=JSON.parse(rp);}
+};
+</script>
+
+<!--
+=================================================================
+APPS SCRIPT PARA GOOGLE SHEETS
+Extensiones > Apps Script > pega esto > Implementar > App web
+=================================================================
+function doPost(e) {
+  const sheet = SpreadsheetApp
+    .openById('1_2ZA5voyC8MXzyrDNz4NQBKbXyXgYyJ77sMlT7LxTpk')
+    .getActiveSheet();
+  if (sheet.getLastRow()===0) {
+    sheet.appendRow(['Fecha','Hora','Nombre','Tipo','Lagos/Casa','Vehículo','Motivo','Status','Oficial','Turno']);
+  }
+  const d = JSON.parse(e.postData.contents);
+  if (d.action==='registrarVisita') {
+    sheet.appendRow([d.fecha,d.hora,d.nombre,d.tipo,d.casa,d.vehiculo,d.motivo,d.status,d.registradoPor,d.turno]);
+  }
+  return ContentService.createTextOutput('OK');
+}
+=================================================================
+-->
+</body>
+</html>
