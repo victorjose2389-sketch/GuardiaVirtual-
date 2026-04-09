@@ -338,10 +338,21 @@
 
 <script>
 // ══════════════════════════════════════════════════════
-// CONFIGURACIÓN — PON AQUÍ LA URL DE TU APPS SCRIPT
+// CONFIGURACIÓN — URL DEL APPS SCRIPT
 // ══════════════════════════════════════════════════════
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbw693Gb3jN4R2oe8vrh2qkMGuvepT97ihN6mSSU0G3tEZVJUnPxSLUEEZFry1NHGbbGJg/exec";
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbzgds3wGOKSQjftKTcpy8imIVJv3EvDTts9cX1KGUbrLeRCb3zDn7aCASbVHTbZgovRsg/exec";
 // ══════════════════════════════════════════════════════
+
+// ── AUTO-SYNC cada 30 segundos ──
+let _autoSyncInterval = null;
+function iniciarAutoSync() {
+  if (_autoSyncInterval) clearInterval(_autoSyncInterval);
+  _autoSyncInterval = setInterval(() => sincronizarTodo(true), 30000);
+}
+function detenerAutoSync() {
+  if (_autoSyncInterval) clearInterval(_autoSyncInterval);
+  _autoSyncInterval = null;
+}
 
 let residentes = [], familiares = [], personal = [], visitas = [], reportes = [];
 let guardia = "", turno = "";
@@ -374,9 +385,11 @@ async function iniciar(g, t) {
     `👤 ${g}  ·  Turno ${t}  ·  ${ahora.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}`;
   actualizarCasas();
   mostrar('visitas');
+  iniciarAutoSync(); // ← sincronización automática cada 30 seg
 }
 
 function cerrarSesion() {
+  detenerAutoSync(); // ← para el auto-sync al cerrar sesión
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login').classList.remove('hidden');
 }
@@ -387,11 +400,6 @@ function cerrarSesion() {
 
 // Descarga todos los datos del Sheets y actualiza la app
 async function sincronizarTodo(silencioso = false) {
-  if (!SHEET_URL || SHEET_URL === 'https://script.google.com/macros/s/AKfycbw693Gb3jN4R2oe8vrh2qkMGuvepT97ihN6mSSU0G3tEZVJUnPxSLUEEZFry1NHGbbGJg/exec') {
-    // Sin Sheets configurado: usa localStorage como antes
-    _cargarLocal();
-    return;
-  }
   if (!silencioso) showSync(true);
   try {
     const res = await fetch(SHEET_URL + '?action=leerTodo', { method:'GET' });
@@ -423,7 +431,6 @@ function _cargarLocal() {
 
 // Envía cualquier acción al Sheets
 async function enviarASheet(payload) {
-  if (!SHEET_URL || SHEET_URL === 'https://script.google.com/macros/s/AKfycbw693Gb3jN4R2oe8vrh2qkMGuvepT97ihN6mSSU0G3tEZVJUnPxSLUEEZFry1NHGbbGJg/exec') return false;
   try {
     await fetch(SHEET_URL, {
       method:'POST', mode:'no-cors',
